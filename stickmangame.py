@@ -2,7 +2,6 @@ from tkinter import *
 import random
 import time
 
-
 class Coords:
     def __init__(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0):
         self.x1 = x1
@@ -42,6 +41,7 @@ def collided_bottom(y, co1, co2):
 class Sprite:
     def __init__(self, game):
         self.game = game
+        self.gameover = False
         self.endgame = False
         self.coordinates = None
 
@@ -105,7 +105,7 @@ class StickFigureSprite(Sprite):
 
     def jump(self, evt):
         if self.f == 0:
-            self.f = -12
+            self.f = -14
 
     def animate(self):
         if self.x != 0 and self.y == 0:
@@ -184,6 +184,9 @@ class StickFigureSprite(Sprite):
             if top and self.y < 0 and collided_top(co, sprite_co):
                 self.y = -self.y
                 top = False
+                if sprite.gameover:
+                    self.game.canvas.create_text(250, 250, text="game over", font=("Times", 50))
+                    self.game.running = False
             if bottom and self.y > 0 and collided_bottom(self.y,
                                                          co, sprite_co):
                 self.y = sprite_co.y1 - co.y2
@@ -192,6 +195,9 @@ class StickFigureSprite(Sprite):
                 self.f = 0
                 bottom = False
                 top = False
+                if sprite.gameover:
+                    self.game.canvas.create_text(250, 250, text="game over", font=("Times", 50))
+                    self.game.running = False
             if bottom and falling and self.y == 0 \
                     and co.y2 < self.game.canvas_height \
                     and collided_bottom(1, co, sprite_co):
@@ -199,17 +205,32 @@ class StickFigureSprite(Sprite):
             if left and self.x < 0 and collided_left(co, sprite_co):
                 self.x = 0
                 left = False
+                if sprite.gameover:
+                    self.game.canvas.create_text(250, 250, text="game over", font=("Times", 50))
+                    self.game.running = False
                 if sprite.endgame:
+                    self.game.canvas.create_text(250, 50, text="クリア--!!", fill="black", font=("Times", 30))
                     self.game.running = False
             if right and self.x > 0 and collided_right(co, sprite_co):
                 self.x = 0
                 right = False
+                if sprite.gameover:
+                    self.game.canvas.create_text(250, 250, text="game over", font=("Times", 50))
+                    self.game.running = False
                 if sprite.endgame:
+                    self.game.canvas.create_text(250, 50, text="クリア--!!", fill="black", font=("Times", 30))
                     self.game.running = False
         if falling and bottom and self.y == 0 \
                     and co.y2 < self.game.canvas_height:
             self.f = 1
         self.game.canvas.move(self.image, self.x, self.y)
+
+class Enemy(Sprite):
+    def __init__(self, game, x, y, width, height, color):
+        Sprite.__init__(self, game)
+        self.enemy = game.canvas.create_rectangle(x, y, width, height, fill=color)
+        self.coordinates = Coords(x, y, width, height)
+        self.gameover = True
 
 
 class DoorSprite(Sprite):
@@ -228,12 +249,12 @@ class Game:
         self.tk.title("Mr. Stick Man Races for the Exit")
         self.tk.resizable(0,0)
         self.tk.wm_attributes("-topmost", 1)
-        self.canvas = Canvas(self.tk, width=500, height=480,
+        self.canvas = Canvas(self.tk, width=500, height=500,
                              highlightthickness=0)
         self.canvas.pack()
         self.tk.update()
-        self.canvas_height = 480
-        self.canvas_width = 640
+        self.canvas_height = 500
+        self.canvas_width = 500
         self.bg = PhotoImage(file="background.gif")
         w = self.bg.width()
         h = self.bg.height()
@@ -257,8 +278,6 @@ class Game:
 
 if __name__=='__main__':
     g = Game()
-    platform1 = PlatformSprite(g, PhotoImage(file='platform1.gif'),
-                               0, 480, 100, 10)
     platform2 = PlatformSprite(g, PhotoImage(file='platform1.gif'),
                                150, 440, 100, 10)
     platform3 = PlatformSprite(g, PhotoImage(file='platform1.gif'),
@@ -266,19 +285,18 @@ if __name__=='__main__':
     platform4 = PlatformSprite(g, PhotoImage(file='platform1.gif'),
                                300, 160, 100, 10)
     platform5 = PlatformSprite(g, PhotoImage(file='platform2.gif'),
-                               175, 350, 100, 10)
+                               175, 350, 66, 10)
     platform6 = PlatformSprite(g, PhotoImage(file='platform2.gif'),
-                               50, 300, 100, 10)
+                               50, 300, 66, 10)
     platform7 = PlatformSprite(g, PhotoImage(file='platform2.gif'),
-                               170, 120, 100, 10)
+                               170, 120, 66, 10)
     platform8 = PlatformSprite(g, PhotoImage(file='platform2.gif'),
-                               45, 60, 100, 10)
-    platform9 = PlatformSprite(g, PhotoImage(file='platform3.gif'),
-                               170, 250, 100, 10)
+                               65, 60, 66, 10)
+    platform9 = PlatformSprite(g, PhotoImage(file='platform2.gif'),
+                               150, 250, 66, 10)
     platform10 = PlatformSprite(g, PhotoImage(file='platform3.gif'),
-                               230, 200, 100, 10)
+                               230, 200, 33, 10)
 
-    g.sprites.append(platform1)
     g.sprites.append(platform2)
     g.sprites.append(platform3)
     g.sprites.append(platform4)
@@ -288,8 +306,14 @@ if __name__=='__main__':
     g.sprites.append(platform8)
     g.sprites.append(platform9)
     g.sprites.append(platform10)
-    door = DoorSprite(g, PhotoImage(file="door1.gif"), 45, 30, 40, 35)
+    door = DoorSprite(g, PhotoImage(file="door1.gif"), 65, 30, 40, 35)
+
+    enemy1 = Enemy(g, 30, 470, 60, 500, "black")
+    g. sprites.append(enemy1)
+    enemy2 = Enemy(g, 400, 400, 500, 415, "black")
+    g. sprites.append(enemy2)
     g.sprites.append(door)
     sf = StickFigureSprite(g)
     g.sprites.append(sf)
     g.tk.mainloop()
+
